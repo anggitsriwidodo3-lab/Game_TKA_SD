@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Petualangan Nilai Kehidupan & Matematika - TKA Kelas 6</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #certificate-area, #certificate-area * {
+        visibility: visible;
+      }
+      #certificate-area {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        box-shadow: none !important;
+        border: 8px solid #4f46e5 !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-indigo-50 min-h-screen flex flex-col items-center justify-center p-4">
+
+  <div class="max-w-xl w-full bg-white rounded-2xl shadow-xl overflow-hidden p-6">
+    <div class="flex justify-between items-center mb-2">
+      <h1 class="text-xl font-bold text-indigo-700">Petualangan Dito & Dobi</h1>
+      <button onclick="toggleDevModal()" class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded font-medium hover:bg-indigo-200">Tim Pengembang 👥</button>
+    </div>
+    <p class="text-xs text-gray-500 mb-6">Game Edukatif TKA Literasi & Numerasi Kelas 6 SD</p>
+
+    <!-- 1. LAYAR PENDAFTARAN & PENGATURAN -->
+    <div id="setup-screen" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Nama Lengkap Siswa</label>
+        <input type="text" id="player-name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border text-sm" placeholder="Contoh: Budi Santoso">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Pilih Avatar</label>
+        <select id="avatar-select" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border text-sm">
+          <option value="avatar_01">Petualang Laki-Laki</option>
+          <option value="avatar_02">Petualang Perempuan</option>
+          <option value="avatar_03">Hewan Bijak</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Tingkat Kesulitan</label>
+        <select id="difficulty-select" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border text-sm">
+          <option value="easy">Mudah (Pengali XP 1x)</option>
+          <option value="normal" selected>Normal (Pengali XP 1.5x)</option>
+          <option value="hard">Tantangan (Pengali XP 2x)</option>
+        </select>
+      </div>
+      <button onclick="startTheGame()" class="w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 transition text-sm">
+        Mulai Petualangan 🚀
+      </button>
+    </div>
+
+    <!-- 2. LAYAR GAME / KUIS -->
+    <div id="game-screen" class="hidden space-y-4">
+      <div class="flex justify-between items-center text-xs font-semibold text-gray-600 bg-gray-100 p-3 rounded-lg">
+        <span id="stat-chapter">Babak: 1</span>
+        <span>XP: <span id="stat-xp" class="text-indigo-600">0</span></span>
+        <span>Koin: <span id="stat-coin" class="text-yellow-600">0</span></span>
+        <button onclick="confirmReturnToMenu()" class="text-[10px] bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200">Keluar 🏠</button>
+      </div>
+
+      <div id="passage-box" class="bg-amber-50 p-3 rounded-lg text-xs text-gray-700 max-h-36 overflow-y-auto border border-amber-200">
+        <!-- Bacaan dimuat dinamis -->
+      </div>
+
+      <div class="font-medium text-gray-800 text-sm" id="question-text">
+        <!-- Pertanyaan dimuat dinamis -->
+      </div>
+
+      <!-- Kontainer Tipe Soal -->
+      <div id="options-container" class="space-y-2"></div>
+      <div id="multiple-choice-container" class="space-y-2 hidden"></div>
+      <div id="matrix-container" class="space-y-3 hidden"></div>
+
+      <!-- Tombol Kirim Jawaban Khusus -->
+      <button id="submit-mc-btn" onclick="submitMultipleChoiceAnswer()" class="hidden w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 transition text-sm">Kirim Jawaban Pilihan Ganda 🎯</button>
+      <button id="submit-matrix-btn" onclick="submitMatrixAnswer()" class="hidden w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 transition text-sm">Kirim Jawaban Matriks 🎯</button>
+
+      <div id="feedback-box" class="hidden p-3 rounded-lg text-xs font-medium"></div>
+
+      <button id="next-btn" onclick="handleNextButton()" class="hidden w-full bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 transition text-sm">
+        Lanjut ke Soal Berikutnya ➡️
+      </button>
+    </div>
+
+    <!-- 3. LAYAR LEADERBOARD & SERTIFIKAT -->
+    <div id="leaderboard-screen" class="hidden space-y-4">
+      <!-- TAMPILAN KARTU SERTIFIKAT -->
+      <div id="certificate-area" class="bg-gradient-to-br from-amber-50 to-indigo-50 border-4 border-indigo-600 rounded-2xl p-5 shadow-inner space-y-3 text-center">
+        <div class="border-b-2 border-indigo-200 pb-2">
+          <h2 class="text-xl font-extrabold text-indigo-900 tracking-wide uppercase">Sertifikat Kelulusan</h2>
+          <p class="text-[10px] text-indigo-600 font-semibold tracking-wider mt-0.5">PETUALANGAN NILAI KEHIDUPAN & MATEMATIKA TKA</p>
+        </div>
+        
+        <p class="text-[11px] text-gray-600 italic">Diberikan sebagai penghargaan tertinggi kepada:</p>
+        <h3 id="cert-player-name" class="text-lg font-bold text-gray-900 underline decoration-indigo-500 decoration-2">Budi Santoso</h3>
+        
+        <p class="text-xs text-gray-700 leading-relaxed px-2">
+          Telah berhasil menyelesaikan seluruh tantangan dengan perolehan akhir <strong id="cert-total-xp" class="text-indigo-700">0 XP</strong> dan <strong id="cert-total-coins" class="text-yellow-700">0 Koin</strong>.
+        </p>
+
+        <div class="flex justify-between items-end pt-3 border-t border-gray-200 text-left px-2">
+          <div class="text-[10px] text-gray-500">
+            <p>Tanggal: <span id="cert-date" class="font-medium text-gray-700">-</span></p>
+            <p>SD Negeri Sampang 1</p>
+          </div>
+          <div class="text-center text-[10px] text-gray-500">
+            <div class="w-16 h-6 border-b border-gray-400 mx-auto mb-1"></div>
+            <p class="font-bold text-gray-700">Tim Pengembang TKA</p>
+          </div>
+        </div>
+      </div>
+
+      <button onclick="downloadCertificatePDF()" class="w-full bg-amber-500 text-white font-semibold py-2 px-3 rounded-lg text-xs hover:bg-amber-600 transition flex items-center justify-center gap-1 shadow">
+        📄 Cetak / Simpan Sertifikat PDF
+      </button>
+
+      <hr class="my-2 border-gray-200">
+
+      <h2 class="text-base font-bold text-center text-gray-800">🏆 Papan Peringkat (Leaderboard)</h2>
+      <div id="leaderboard-list" class="divide-y divide-gray-200 max-h-48 overflow-y-auto text-xs">
+        <!-- Peringkat dimuat dinamis -->
+      </div>
+      
+      <button onclick="location.reload()" class="w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg text-xs">
+        Main Lagi 🔄
+      </button>
+    </div>
+
+  </div>
+
+  <!-- MODAL TIM PENGEMBANG -->
+  <div id="dev-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-sm w-full p-6 space-y-3">
+      <h3 class="font-bold text-gray-800 text-base">Tim Pengembang Game</h3>
+      <ul class="text-xs text-gray-600 space-y-1 list-disc list-inside">
+        <li>Anggit Sriwidodo</li>
+        <li>Nur Sholeh</li>
+        <li>Darul Nuriyah</li>
+        <li>Budi Utami</li>
+        <li>Siti Khalimah</li>
+        <li>Nurul Faizah</li>
+        <li>Nur Faiyah</li>
+      </ul>
+      <button onclick="toggleDevModal()" class="w-full bg-gray-200 py-1.5 rounded-lg text-xs font-semibold text-gray-700">Tutup</button>
+    </div>
+  </div>
+
+  <!-- SKRIP UTAMA GAME -->
+  <script>
+    // ---------------------------------------------------------
+    // 1. DATA JSON GAME (BABAK 1, 2, DAN 3)
+    // ---------------------------------------------------------
+    const jsonGameData = {
+      "game_metadata": {
+        "title": "Petualangan Nilai Kehidupan: Petualangan Dito & Dobi",
+        "target_audience": "Kelas 6 SD",
+        "subject": "Literasi & Numerasi TKA",
+        "version": "1.4.0"
+      },
+      "player_setup": {
+        "require_name_input": true,
+        "avatar_options": [
+          { "id": "avatar_01", "name": "Petualang Laki-Laki" },
+          { "id": "avatar_02", "name": "Petualang Perempuan" },
+          { "id": "avatar_03", "name": "Hewan Bijak" }
+        ]
+      },
+      "leaderboard_system": { "max_display_entries": 10 },
+      "chapters": [
+        {
+          "chapter_id": 1,
+          "chapter_title": "Babak 1: Kejujuran Dito",
+          "reading_passage": {
+            "title": "Kejujuran Dito",
+            "content": "Sepulang sekolah, Dito bermain di tepi sungai bersama kakaknya, Dini. Tiba-tiba, Dito menemukan sebuah dompet kecil di antara tumpukan pasir. Mereka membawa dompet itu kepada ayah, dan mendapati kartu identitas pemiliknya. Pemilik dompet sangat gempira dan menawarkan sejumlah uang sebagai tanda terima kasih. Namun, Dito menolak dengan sopan karena ia hanya ingin mengembalikan barang yang bukan miliknya. Ayah tersenyum bangga atas kejujuran anak-anaknya."
+          },
+          "badge_reward": { "id": "badge_honest_hero", "name": "The Honest Hero" },
+          "questions": [
+            {
+              "question_id": "Q1_01",
+              "type": "single_choice",
+              "prompt": "Benda yang ditemukan Dito di antara tumpukan pasir adalah ....",
+              "options": [
+                { "id": "A", "text": "Batu kecil unik" },
+                { "id": "B", "text": "Kartu identitas pemilik" },
+                { "id": "C", "text": "Dompet kecil" },
+                { "id": "D", "text": "Tas sekolah Dini" }
+              ],
+              "correct_answer": "C",
+              "xp_reward": 100,
+              "coin_reward": 50,
+              "feedback": {
+                "correct": "Hebat! Dompet kecil adalah objek utama cerita yang memicu seluruh peristiwa.",
+                "incorrect": "Kurang tepat. Ingat kembali benda apa yang ditemukan Dito di pasir."
+              }
+            },
+            {
+              "question_id": "Q1_02",
+              "type": "multiple_choice",
+              "prompt": "Manakah pernyataan yang menunjukkan amanat cerita tersebut? (Pilih dua jawaban benar)",
+              "options": [
+                { "id": "opt_1", "text": "Kejujuran harus dilakukan meskipun tidak mendapatkan imbalan.", "is_correct": true },
+                { "id": "opt_2", "text": "Kita harus membiasakan sikap jujur dan peduli terhadap sesama.", "is_correct": true },
+                { "id": "opt_3", "text": "Barang yang ditemukan boleh disimpan jika tidak ada yang melihat.", "is_correct": false }
+              ],
+              "xp_reward": 150,
+              "coin_reward": 75,
+              "feedback": {
+                "correct": "Pintar! Dito menolak hadiah karena ketulusannya dan peduli pada sesama.",
+                "incorrect": "Periksa kembali pilihanmu. Kejujuran harus dijaga tanpa mengharapkan imbalan."
+              }
+            },
+            {
+              "question_id": "Q1_03",
+              "type": "single_choice",
+              "prompt": "Dito semakin memahami pentingnya kejujuran karena...",
+              "options": [
+                { "id": "A", "text": "Dito mendapatkan hadiah dari pemilik dompet." },
+                { "id": "B", "text": "Dito mengalami peristiwa mengembalikan dompet tanpa mengharapkan imbalan." },
+                { "id": "C", "text": "Dito melihat kakaknya mengumpulkan batu kecil." },
+                { "id": "D", "text": "Dito merasa takut dimarahi ayah." }
+              ],
+              "correct_answer": "B",
+              "xp_reward": 100,
+              "coin_reward": 50,
+              "feedback": {
+                "correct": "Tepat sekali! Pengalaman langsung memperkuat pemahaman nilai kejujuran.",
+                "incorrect": "Kurang tepat. Pengalaman mengembalikan dompet tanpa pamrihlah kuncinya."
+              }
+            }
+          ]
+        },
+        {
+          "chapter_id": 2,
+          "chapter_title": "Babak 2: Persahabatan Empat Sekawan",
+          "reading_passage": {
+            "title": "Persahabatan Empat Sekawan",
+            "content": "Mota, Sole, dan Nomi cemas menunggu Dobi yang terlambat. Dobi datang terengah-engah dan mengabarkan bahwa ibunya keracunan makanan dan muntah-muntah. Mengetahui hal itu, teman-temannya sepakat menunda rencana bermain untuk membantu Dobi mencari madu murni penawar racun kepada Ratu Lebi."
+          },
+          "badge_reward": { "id": "badge_true_friend", "name": "True Friend" },
+          "questions": [
+            {
+              "question_id": "Q2_01",
+              "type": "single_choice",
+              "prompt": "Apa penyebab ibu Dobi sakit?",
+              "options": [
+                { "id": "A", "text": "Kelelahan bekerja di hutan pinus." },
+                { "id": "B", "text": "Keracunan makanan sehingga muntah-muntah." },
+                { "id": "C", "text": "Tersengat lebah saat mencari madu." },
+                { "id": "D", "text": "Terlambat datang menemui teman." }
+              ],
+              "correct_answer": "B",
+              "xp_reward": 100,
+              "coin_reward": 50,
+              "feedback": {
+                "correct": "Benar! Ibu Dobi mengalami keracunan makanan sejak pagi.",
+                "incorrect": "Cek kembali alasan Dobi meminta maaf saat tiba di lokasi."
+              }
+            },
+            {
+              "question_id": "Q2_02",
+              "type": "matrix_matching",
+              "prompt": "Tentukan apakah perilaku berikut RELEVAN atau TIDAK RELEVAN dengan nilai persahabatan cerita!",
+              "items": [
+                { "id": "item_A", "statement": "Rina menunda main demi menemani ibu yang sakit di rumah.", "correct_category": "Relevan" },
+                { "id": "item_B", "statement": "Bima marah tanpa mau mendengarkan alasan temannya yang terlambat.", "correct_category": "Tidak Relevan" }
+              ],
+              "categories": ["Relevan", "Tidak Relevan"],
+              "xp_reward": 200,
+              "coin_reward": 100,
+              "feedback": {
+                "correct": "Luar biasa! Kamu memahami penerapan empati dan kepedulian.",
+                "incorrect": "Masih ada kategori yang kurang tepat. Nilai cerita menekankan empati."
+              }
+            }
+          ]
+        },
+        {
+          "chapter_id": 3,
+          "chapter_title": "Babak 3: Misteri Harta Karun Geometri",
+          "reading_passage": {
+            "title": "Peti Harta Karun di Gua Kuno",
+            "content": "Setelah melewati hutan pinus, Dito dan Dobi menemukan sebuah ruang rahasia di dalam gua kuno. Di tengah ruangan, terdapat sebuah peti harta karun berbentuk balok berukuran besar yang dikunci dengan teka-teki matematika. Untuk membuka peti tersebut dan mendapatkan kunci penyelamatan, mereka harus menghitung volume kotak penyimpanan harta karun dengan teliti."
+          },
+          "badge_reward": { "id": "badge_math_master", "name": "Master of Geometry" },
+          "questions": [
+            {
+              "question_id": "Q3_01",
+              "type": "single_choice",
+              "prompt": "Sebuah peti harta karun berbentuk balok memiliki panjang 80 cm, lebar 50 cm, dan tinggi 40 cm. Berapa volume (isi) dari peti harta karun tersebut?",
+              "options": [
+                { "id": "A", "text": "160.000 cm³" },
+                { "id": "B", "text": "180.000 cm³" },
+                { "id": "C", "text": "200.000 cm³" },
+                { "id": "D", "text": "240.000 cm³" }
+              ],
+              "correct_answer": "A",
+              "xp_reward": 150,
+              "coin_reward": 75,
+              "feedback": {
+                "correct": "Hebat! Volume balok dihitung dengan rumus Panjang × Lebar × Tinggi (80 × 50 × 40 = 160.000 cm³). Peti terbuka!",
+                "incorrect": "Kurang tepat. Ingat kembali rumus volume balok: V = p × l × t."
+              }
+            },
+            {
+              "question_id": "Q3_02",
+              "type": "single_choice",
+              "prompt": "Di sebelah peti balok, terdapat wadah air berbentuk kubus dengan panjang rusuk 60 cm. Jika wadah terisi penuh, berapa liter volume air di dalam wadah tersebut? (Catatan: 1 liter = 1.000 cm³)",
+              "options": [
+                { "id": "A", "text": "21,6 liter" },
+                { "id": "B", "text": "216 liter" },
+                { "id": "C", "text": "2.160 liter" },
+                { "id": "D", "text": "21.600 liter" }
+              ],
+              "correct_answer": "B",
+              "xp_reward": 200,
+              "coin_reward": 100,
+              "feedback": {
+                "correct": "Luar biasa! Volume kubus = s³ = 60 × 60 × 60 = 216.000 cm³ = 216 liter.",
+                "incorrect": "Coba hitung volume kubus (s × s × s) lalu konversikan dari cm³ ke liter (bagi 1.000)."
+              }
+            }
+          ]
+        }
+      ]
+    };
+
+    // ---------------------------------------------------------
+    // 2. ENGINE LOGIC & LOCALSTORAGE
+    // ---------------------------------------------------------
+    class QuizGameEngine {
+      constructor(gameData) {
+        this.gameData = gameData;
+        this.currentPlayer = null;
+        this.currentChapterIndex = 0;
+        this.currentQuestionIndex = 0;
+        this.sessionStartTime = null;
+        this.difficultyMultiplier = 1.0;
+        this.leaderboard = [];
+        this.loadFromLocalStorage();
+      }
+
+      startNewSession(playerName, selectedAvatarId, difficulty) {
+        const avatar = this.gameData.player_setup.avatar_options.find(a => a.id === selectedAvatarId);
+        
+        // Tentukan pengali poin berdasarkan kesulitan
+        if (difficulty === 'easy') this.difficultyMultiplier = 1.0;
+        else if (difficulty === 'normal') this.difficultyMultiplier = 1.5;
+        else if (difficulty === 'hard') this.difficultyMultiplier = 2.0;
+
+        this.currentPlayer = {
+          name: playerName,
+          avatar: avatar ? avatar.name : "Petualang",
+          difficulty: difficulty,
+          totalXP: 0,
+          totalCoins: 0,
+          badgesUnlocked: [],
+          completionTimeSeconds: 0
+        };
+        this.currentChapterIndex = 0;
+        this.currentQuestionIndex = 0;
+        this.sessionStartTime = Date.now();
+        this.saveStateToLocalStorage();
+      }
+
+      getCurrentQuestion() {
+        const chapter = this.gameData.chapters[this.currentChapterIndex];
+        if (!chapter) return null;
+        return {
+          chapterTitle: chapter.chapter_title,
+          readingPassage: chapter.reading_passage,
+          questionData: chapter.questions[this.currentQuestionIndex]
+        };
+      }
+
+      submitAnswer(userSubmission) {
+        const currentQ = this.getCurrentQuestion()?.questionData;
+        if (!currentQ) return { status: "ERROR" };
+
+        let isCorrect = false;
+        if (currentQ.type === "single_choice") {
+          isCorrect = userSubmission === currentQ.correct_answer;
+        } else if (currentQ.type === "multiple_choice") {
+          const correctIds = currentQ.options.filter(opt => opt.is_correct).map(opt => opt.id).sort();
+          const userSorted = [...userSubmission].sort();
+          isCorrect = correctIds.length === userSorted.length && correctIds.every((val, i) => val === userSorted[i]);
+        } else if (currentQ.type === "matrix_matching") {
+          isCorrect = currentQ.items.every(item => userSubmission[item.id] === item.correct_category);
+        }
+
+        let xpEarned = 0, coinsEarned = 0;
+        if (isCorrect) {
+          xpEarned = Math.round(currentQ.xp_reward * this.difficultyMultiplier);
+          coinsEarned = Math.round(currentQ.coin_reward * this.difficultyMultiplier);
+          this.currentPlayer.totalXP += xpEarned;
+          this.currentPlayer.totalCoins += coinsEarned;
+        }
+
+        this.saveStateToLocalStorage();
+        return {
+          isCorrect,
+          feedback: isCorrect ? currentQ.feedback.correct : currentQ.feedback.incorrect,
+          playerStats: { totalXP: this.currentPlayer.totalXP, totalCoins: this.currentPlayer.totalCoins }
+        };
+      }
+
+      nextQuestion() {
+        const currentChapter = this.gameData.chapters[this.currentChapterIndex];
+        if (this.currentQuestionIndex < currentChapter.questions.length - 1) {
+          this.currentQuestionIndex++;
+          this.saveStateToLocalStorage();
+          return { type: "NEXT_QUESTION" };
+        }
+        if (this.currentChapterIndex < this.gameData.chapters.length - 1) {
+          this.currentChapterIndex++;
+          this.currentQuestionIndex = 0;
+          this.saveStateToLocalStorage();
+          return { type: "CHAPTER_COMPLETE" };
+        }
+        return this.finishGame();
+      }
+
+      finishGame() {
+        const durationSeconds = Math.floor((Date.now() - this.sessionStartTime) / 1000);
+        this.currentPlayer.completionTimeSeconds = durationSeconds;
+        this.updateLeaderboard(this.currentPlayer);
+        localStorage.removeItem("tka_game_active_session");
+        return { type: "GAME_OVER" };
+      }
+
+      updateLeaderboard(playerData) {
+        this.leaderboard.push({
+          name: `${playerData.name} (${playerData.difficulty.toUpperCase()})`,
+          totalXP: playerData.totalXP,
+          timeSeconds: playerData.completionTimeSeconds
+        });
+        this.leaderboard.sort((a, b) => b.totalXP !== a.totalXP ? b.totalXP - a.totalXP : a.timeSeconds - b.timeSeconds);
+        this.leaderboard = this.leaderboard.slice(0, 10);
+        localStorage.setItem("tka_game_leaderboard", JSON.stringify(this.leaderboard));
+      }
+
+      saveStateToLocalStorage() {
+        localStorage.setItem("tka_game_active_session", JSON.stringify({
+          currentPlayer: this.currentPlayer,
+          currentChapterIndex: this.currentChapterIndex,
+          currentQuestionIndex: this.currentQuestionIndex,
+          sessionStartTime: this.sessionStartTime,
+          difficultyMultiplier: this.difficultyMultiplier
+        }));
+      }
+
+      loadFromLocalStorage() {
+        const savedLB = localStorage.getItem("tka_game_leaderboard");
+        if (savedLB) this.leaderboard = JSON.parse(savedLB);
+        const savedSession = localStorage.getItem("tka_game_active_session");
+        if (savedSession) {
+          const session = JSON.parse(savedSession);
+          this.currentPlayer = session.currentPlayer;
+          this.currentChapterIndex = session.currentChapterIndex;
+          this.currentQuestionIndex = session.currentQuestionIndex;
+          this.sessionStartTime = session.sessionStartTime;
+          this.difficultyMultiplier = session.difficultyMultiplier || 1.0;
+        }
+      }
+    }
+
+    // ---------------------------------------------------------
+    // 3. EFEK SUARA (WEB AUDIO API)
+    // ---------------------------------------------------------
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSoundEffect(type) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      if (type === 'correct') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523.25, now);
+        osc.frequency.setValueAtTime(783.99, now + 0.1);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+      } else {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.linearRampToValueAtTime(80, now + 0.25);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+      }
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.3);
+    }
+
+    // ---------------------------------------------------------
+    // 4. INTERAKSI ANTARMUKA (CONTROLLER)
+    // ---------------------------------------------------------
+    const engine = new QuizGameEngine(jsonGameData);
+    let mcUserSelections = [];
+    let matrixUserAnswers = {};
+
+    window.addEventListener("DOMContentLoaded", () => {
+      if (engine.currentPlayer && engine.currentPlayer.name) {
+        document.getElementById("setup-screen").classList.add("hidden");
+        document.getElementById("game-screen").classList.remove("hidden");
+        renderCurrentQuestion();
+      }
+    });
+
+    function toggleDevModal() {
+      const modal = document.getElementById("dev-modal");
+      modal.classList.toggle("hidden");
+    }
+
+    function startTheGame() {
+      const name = document.getElementById("player-name").value.trim();
+      const avatarId = document.getElementById("avatar-select").value;
+      const difficulty = document.getElementById("difficulty-select").value;
+
+      if (!name) { alert("Silakan masukkan nama siswa!"); return; }
+      
+      engine.startNewSession(name, avatarId, difficulty);
+      document.getElementById("setup-screen").classList.add("hidden");
+      document.getElementById("game-screen").classList.remove("hidden");
+      renderCurrentQuestion();
+    }
+
+    function confirmReturnToMenu() {
+      if (confirm("Apakah Anda yakin ingin kembali ke menu utama? Progres kuis saat ini akan direset.")) {
+        localStorage.removeItem("tka_game_active_session");
+        location.reload();
+      }
+    }
+
+    function renderCurrentQuestion() {
+      const qInfo = engine.getCurrentQuestion();
+      if (!qInfo) { showLeaderboardScreen(); return; }
+
+      document.getElementById("stat-chapter").innerText = qInfo.chapterTitle;
+      document.getElementById("stat-xp").innerText = engine.currentPlayer.totalXP;
+      document.getElementById("stat-coin").innerText = engine.currentPlayer.totalCoins;
+      document.getElementById("passage-box").innerHTML = `<strong>${qInfo.readingPassage.title}</strong><br>${qInfo.readingPassage.content}`;
+      document.getElementById("question-text").innerText = qInfo.questionData.prompt;
+
+      const optContainer = document.getElementById("options-container");
+      const mcContainer = document.getElementById("multiple-choice-container");
+      const matrixContainer = document.getElementById("matrix-container");
+      const submitMcBtn = document.getElementById("submit-mc-btn");
+      const submitMatrixBtn = document.getElementById("submit-matrix-btn");
+
+      optContainer.innerHTML = ""; mcContainer.innerHTML = ""; matrixContainer.innerHTML = "";
+      optContainer.classList.add("hidden"); mcContainer.classList.add("hidden"); matrixContainer.classList.add("hidden");
+      submitMcBtn.classList.add("hidden"); submitMatrixBtn.classList.add("hidden");
+      document.getElementById("feedback-box").classList.add("hidden");
+      document.getElementById("next-btn").classList.add("hidden");
+
+      mcUserSelections = []; matrixUserAnswers = {};
+      const qData = qInfo.questionData;
+
+      if (qData.type === "single_choice") {
+        optContainer.classList.remove("hidden");
+        qData.options.forEach(opt => {
+          const btn = document.createElement("button");
+          btn.className = "w-full text-left p-2.5 rounded-lg border border-gray-200 hover:bg-indigo-50 transition text-xs font-medium";
+          btn.innerText = `${opt.id}. ${opt.text}`;
+          btn.onclick = () => submitSingleChoice(opt.id, btn);
+          optContainer.appendChild(btn);
+        });
+      } else if (qData.type === "multiple_choice") {
+        mcContainer.classList.remove("hidden");
+        submitMcBtn.classList.remove("hidden");
+        qData.options.forEach(opt => {
+          const label = document.createElement("label");
+          label.className = "flex items-start gap-2.5 p-2.5 bg-gray-50 rounded-lg border border-gray-200 text-xs cursor-pointer";
+          const chk = document.createElement("input");
+          chk.type = "checkbox";
+          chk.value = opt.id;
+          chk.onchange = e => {
+            if (e.target.checked) mcUserSelections.push(opt.id);
+            else mcUserSelections = mcUserSelections.filter(id => id !== opt.id);
+          };
+          const span = document.createElement("span"); span.innerText = opt.text;
+          label.appendChild(chk); label.appendChild(span);
+          mcContainer.appendChild(label);
+        });
+      } else if (qData.type === "matrix_matching") {
+        matrixContainer.classList.remove("hidden");
+        submitMatrixBtn.classList.remove("hidden");
+        qData.items.forEach(item => {
+          const row = document.createElement("div");
+          row.className = "p-2.5 bg-gray-50 rounded-lg border border-gray-200 space-y-1.5 text-xs";
+          row.innerHTML = `<p class="font-medium">• ${item.statement}</p>`;
+          const btnGrp = document.createElement("div"); btnGrp.className = "flex gap-2";
+          qData.categories.forEach(cat => {
+            const catBtn = document.createElement("button");
+            catBtn.className = "px-2.5 py-1 rounded border border-gray-300 bg-white font-semibold transition";
+            catBtn.innerText = cat;
+            catBtn.onclick = () => {
+              Array.from(btnGrp.children).forEach(b => b.classList.remove("bg-indigo-600", "text-white", "border-indigo-600"));
+              catBtn.classList.add("bg-indigo-600", "text-white", "border-indigo-600");
+              matrixUserAnswers[item.id] = cat;
+            };
+            btnGrp.appendChild(catBtn);
+          });
+          row.appendChild(btnGrp);
+          matrixContainer.appendChild(row);
+        });
+      }
+    }
+
+    function processAnswerResult(isCorrect, feedback, stats) {
+      document.getElementById("stat-xp").innerText = stats.totalXP;
+      document.getElementById("stat-coin").innerText = stats.totalCoins;
+      const fbBox = document.getElementById("feedback-box");
+      fbBox.classList.remove("hidden");
+      if (isCorrect) {
+        playSoundEffect('correct');
+        fbBox.className = "p-3 rounded-lg text-xs font-medium bg-green-50 text-green-800 border border-green-200";
+      } else {
+        playSoundEffect('incorrect');
+        fbBox.className = "p-3 rounded-lg text-xs font-medium bg-red-50 text-red-800 border border-red-200";
+      }
+      fbBox.innerText = feedback;
+      document.getElementById("next-btn").classList.remove("hidden");
+    }
+
+    function submitSingleChoice(optionId, btnEl) {
+      document.querySelectorAll("#options-container button").forEach(b => b.disabled = true);
+      const res = engine.submitAnswer(optionId);
+      if (res.isCorrect) btnEl.classList.add("bg-green-100", "border-green-500", "text-green-800");
+      else btnEl.classList.add("bg-red-100", "border-red-500", "text-red-800");
+      processAnswerResult(res.isCorrect, res.feedback, res.playerStats);
+    }
+
+    function submitMultipleChoiceAnswer() {
+      if (mcUserSelections.length === 0) { alert("Pilih minimal satu jawaban!"); return; }
+      document.getElementById("submit-mc-btn").classList.add("hidden");
+      const res = engine.submitAnswer(mcUserSelections);
+      processAnswerResult(res.isCorrect, res.feedback, res.playerStats);
+    }
+
+    function submitMatrixAnswer() {
+      const currentQ = engine.getCurrentQuestion().questionData;
+      if (Object.keys(matrixUserAnswers).length < currentQ.items.length) { alert("Lengkapi pilihan kategori untuk semua pertanyaan!"); return; }
+      document.getElementById("submit-matrix-btn").classList.add("hidden");
+      const res = engine.submitAnswer(matrixUserAnswers);
+      processAnswerResult(res.isCorrect, res.feedback, res.playerStats);
+    }
+
+    function handleNextButton() {
+      const next = engine.nextQuestion();
+      if (next.type === "GAME_OVER") showLeaderboardScreen();
+      else renderCurrentQuestion();
+    }
+
+    function showLeaderboardScreen() {
+      document.getElementById("game-screen").classList.add("hidden");
+      document.getElementById("leaderboard-screen").classList.remove("hidden");
+
+      if (engine.currentPlayer) {
+        document.getElementById("cert-player-name").innerText = engine.currentPlayer.name;
+        document.getElementById("cert-total-xp").innerText = `${engine.currentPlayer.totalXP} XP`;
+        document.getElementById("cert-total-coins").innerText = `${engine.currentPlayer.totalCoins} Koin`;
+      }
+      
+      const today = new Date();
+      document.getElementById("cert-date").innerText = today.toLocaleDateString('id-ID', {
+        day: 'numeric', month: 'long', year: 'numeric'
+      });
+
+      const list = document.getElementById("leaderboard-list");
+      list.innerHTML = "";
+      engine.leaderboard.forEach((e, idx) => {
+        const row = document.createElement("div");
+        row.className = "py-2 flex justify-between items-center";
+        row.innerHTML = `<span class="font-bold text-gray-700">#${idx+1} ${e.name}</span><span class="text-indigo-600 font-semibold">${e.totalXP} XP</span>`;
+        list.appendChild(row);
+      });
+    }
+
+    function downloadCertificatePDF() {
+      window.print();
+    }
+  </script>
+</body>
+</html>
